@@ -181,7 +181,7 @@ module.exports = {
   version: "0.0.1",
   supportedSearchType: ["music"],
   srcUrl:
-    "https://gitee.com/maotoumao/MusicFreePlugins/raw/v0.1/dist/yinyuetai/index.js",
+    "https://mirror.ghproxy.com/https://raw.githubusercontent.com/dukunjueji/MusicFreePlugins/master/dist/yinyuetai/index.js",
   cacheControl: "no-cache",
   search,
   getMediaSource,

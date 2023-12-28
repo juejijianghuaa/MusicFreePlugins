@@ -79,7 +79,7 @@ const validSongFilter = (item) => {
     return true;
 };
 const validSongUrlFilter = (item) => {
-    return !item.title.includes("伴奏") && !item.title.includes("现场") && !item.title.includes("live") && !item.title.includes("Live");
+    return !item.title.includes("伴奏") && !item.title.includes("现场") && !item.title.toLowerCase().includes("live".toLowerCase());
 };
 
 async function searchBase(query, page, type) {
@@ -593,7 +593,7 @@ module.exports = {
     author: '猫头猫',
     version: "0.2.2",
     srcUrl:
-        "https://gitee.com/maotoumao/MusicFreePlugins/raw/v0.1/dist/qq/index.js",
+        "https://mirror.ghproxy.com/https://raw.githubusercontent.com/dukunjueji/MusicFreePlugins/master/dist/qq/index.js",
     cacheControl: "no-cache",
     hints: {
         importMusicSheet: [
@@ -853,7 +853,7 @@ const searchHeadersBili = {
 async function printSearchResult() {
     try {
         // Call the imported search function
-        const res = await getBiliUrl('西楼儿女');
+        const res = await getBiliUrl('天下 张杰');
         //const data = await searchMusic('就让这大雨全都落下', 1);
 //const top = await getTopLists();
         //const result = await getMediaSource;
@@ -862,10 +862,6 @@ async function printSearchResult() {
     } catch (error) {
         console.error('Error:', error);
     }
-    //https://xy223x166x111x84xy.mcdn.bilivideo.cn:8082/v1/resource/1231463992-1-30280.m4s?agrr=1&build=0&buvid=&bvc=vod&bw=25406&deadline=1703753390&e=ig8euxZM2rNcNbdlhoNvNC8BqJIzNbfqXBvEqxTEto8BTrNvN0GvT90W5JZMkX_YN0Mv
-  // Xg8gNEV4NC8xNEV4N03eN0B5tZlqNxTEto8BTrNvNeZVuJ10Kj_g2UB02J0mN0B5tZlqNCNEto8BTrNvNC7MTX502C8f2jmMQJ6mqF2fka1mqx6gqj0eN0B599M%3D&f=u_0_0&gen=playurlv2&logo=A0020000&mcdnid=18000602&mid=0&nbs=1&nettype=0&oi=988814027&orderid=0%
-  // 2C3&os=mcdn&platform=pc&sign=afa7df&traceid=trhMqfeNjNVXcs_0_e_N&uipk=5&uparams=e%2Cuipk%2Cnbs%2Cdeadline%2Cgen%2Cos%2Coi%2Ctrid%2Cmid%2Cplatform&upsig=7f3d57b173522cb277145eb63bd3f14e
-    //https://xy123x139x63x178xy.mcdn.bilivideo.cn:4483/upgcxcode/55/49/954894955/954894955_nb3-1-30280.m4s?e=ig8euxZM2rNcNbdlhoNvNC8BqJIzNbfqXBvEqxTEto8BTrNvN0GvT90W5JZMkX_YN0MvXg8gNEV4NC8xNEV4N03eN0B5tZlqNxTEto8BTrNvNeZVuJ10Kj_g2UB02J0mN0B5tZlqNCNEto8BTrNvNC7MTX502C8f2jmMQJ6mqF2fka1mqx6gqj0eN0B599M=&uipk=5&nbs=1&deadline=1703753267&gen=playurlv2&os=mcdn&oi=988814027&trid=0000518739a49bc24200b181cf514639e438u&mid=14581262&platform=pc&upsig=0d2d1dfd704e497f102cef8a23e8ef9f&uparams=e,uipk,nbs,deadline,gen,os,oi,trid,mid,platform&mcdnid=1002368&bvc=vod&nettype=0&orderid=0,3&buvid=808CCB82-55C4-DFD4-15C2-23473853C38286589infoc&build=0&f=u_0_0&agrr=1&bw=28266&logo=A0000001
 }
 
 // Call the async function to execute the search and print the result

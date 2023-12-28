@@ -71,7 +71,7 @@ const validSongFilter = (item) => {
     return true;
 };
 const validSongUrlFilter = (item) => {
-    return !item.title.includes("伴奏") && !item.title.includes("现场") && !item.title.includes("live") && !item.title.includes("Live");
+    return !item.title.includes("伴奏") && !item.title.includes("现场") && !item.title.toLowerCase().includes("live".toLowerCase());
 };
 async function searchBase(query, page, type) {
     const res = (await (0, axios_1.default)({
@@ -494,7 +494,7 @@ module.exports = {
     platform: "QQ音乐",
     author: '猫头猫',
     version: "0.2.2",
-    srcUrl: "https://gitee.com/maotoumao/MusicFreePlugins/raw/v0.1/dist/qq/index.js",
+    srcUrl: "https://mirror.ghproxy.com/https://raw.githubusercontent.com/dukunjueji/MusicFreePlugins/master/dist/qq/index.js",
     cacheControl: "no-cache",
     hints: {
         importMusicSheet: [
@@ -718,7 +718,7 @@ const searchHeadersBili = {
 };
 async function printSearchResult() {
     try {
-        const res = await getBiliUrl('西楼儿女');
+        const res = await getBiliUrl('天下 张杰');
         console.log(res);
     }
     catch (error) {
