@@ -79,7 +79,12 @@ const validSongFilter = (item) => {
     return true;
 };
 const validSongUrlFilter = (item) => {
-    return !item.title.includes("伴奏") && !item.title.includes("现场") && !item.title.toLowerCase().includes("live".toLowerCase());
+    return !item.tags.toLowerCase().includes("live".toLowerCase()) &&
+        !item.title.includes("伴奏") &&
+        !item.title.includes("现场") &&
+        !item.title.toLowerCase().includes("live".toLowerCase()) &&
+        !item.tags.toLowerCase().includes("现场") &&
+        !item.tags.toLowerCase().includes("伴奏");
 };
 
 async function searchBase(query, page, type) {
@@ -587,6 +592,10 @@ async function getMusicSheetInfo(sheet: IMusicSheet.IMusicSheetItem, page) {
     };
 }
 
+function getBiliArtist(musicItem) {
+    return musicItem.artist.replace("G.E.M. 邓紫棋","邓紫棋");
+}
+
 // 接口参考：https://jsososo.github.io/QQMusicApi/#/
 module.exports = {
     platform: "QQ音乐",
@@ -624,7 +633,7 @@ module.exports = {
     async getMediaSource(musicItem, quality: IMusic.IQualityKey) {
         let finalUrl = "";
         if (musicItem.payPlay === 1) {
-            const {resultUrl} = await getBiliUrl(musicItem.title + " " + musicItem.artist);
+            const {resultUrl} = await getBiliUrl(musicItem.title + " " + getBiliArtist(musicItem));
             finalUrl = resultUrl.url
           const hostUrl = finalUrl.substring(finalUrl.indexOf("/") + 2);
           const _headers = {
@@ -688,7 +697,7 @@ async function getBiliUrl(key) {
 
 async function searchAlbumBili(keyword, page) {
     const resultData = await searchBaseBili(keyword, page, "video");
-    const albums = resultData.result.filter(validSongUrlFilter).map(formatMedia);
+    const albums = resultData.result.map(formatMedia).filter(validSongUrlFilter);
     console.log(albums);
     return {
         isEnd: resultData.numResults <= page * pageSize,
@@ -711,7 +720,7 @@ function formatMedia(result: any) {
             : result.pic,
         description: result.description,
         // duration: durationToSec(result.duration),
-        tags: result.tag?.split(","),
+        tags: result.tag,
         date: dayjs.unix(result.pubdate || result.created).format("YYYY-MM-DD"),
     };
 }
@@ -853,8 +862,8 @@ const searchHeadersBili = {
 async function printSearchResult() {
     try {
         // Call the imported search function
-        const res = await getBiliUrl('天下 张杰');
-        //const data = await searchMusic('就让这大雨全都落下', 1);
+        const res = await getBiliUrl('多远都要在一起 G.E.M. 邓紫棋');
+        //const data = await searchMusic('多远都要在一起', 1);
 //const top = await getTopLists();
         //const result = await getMediaSource;
         // console.log(result.data[0].aid);

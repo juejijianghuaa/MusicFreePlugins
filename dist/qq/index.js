@@ -71,7 +71,12 @@ const validSongFilter = (item) => {
     return true;
 };
 const validSongUrlFilter = (item) => {
-    return !item.title.includes("伴奏") && !item.title.includes("现场") && !item.title.toLowerCase().includes("live".toLowerCase());
+    return !item.tags.toLowerCase().includes("live".toLowerCase()) &&
+        !item.title.includes("伴奏") &&
+        !item.title.includes("现场") &&
+        !item.title.toLowerCase().includes("live".toLowerCase()) &&
+        !item.tags.toLowerCase().includes("现场") &&
+        !item.tags.toLowerCase().includes("伴奏");
 };
 async function searchBase(query, page, type) {
     const res = (await (0, axios_1.default)({
@@ -490,6 +495,9 @@ async function getMusicSheetInfo(sheet, page) {
         musicList: data,
     };
 }
+function getBiliArtist(musicItem) {
+    return musicItem.artist.replace("G.E.M. 邓紫棋", "邓紫棋");
+}
 module.exports = {
     platform: "QQ音乐",
     author: '猫头猫',
@@ -525,7 +533,7 @@ module.exports = {
     async getMediaSource(musicItem, quality) {
         let finalUrl = "";
         if (musicItem.payPlay === 1) {
-            const { resultUrl } = await getBiliUrl(musicItem.title + " " + musicItem.artist);
+            const { resultUrl } = await getBiliUrl(musicItem.title + " " + getBiliArtist(musicItem));
             finalUrl = resultUrl.url;
             const hostUrl = finalUrl.substring(finalUrl.indexOf("/") + 2);
             const _headers = {
@@ -589,7 +597,7 @@ async function getBiliUrl(key) {
 }
 async function searchAlbumBili(keyword, page) {
     const resultData = await searchBaseBili(keyword, page, "video");
-    const albums = resultData.result.filter(validSongUrlFilter).map(formatMedia);
+    const albums = resultData.result.map(formatMedia).filter(validSongUrlFilter);
     console.log(albums);
     return {
         isEnd: resultData.numResults <= page * pageSize,
@@ -597,7 +605,7 @@ async function searchAlbumBili(keyword, page) {
     };
 }
 function formatMedia(result) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+    var _a, _b, _c, _d, _e, _f, _g, _h;
     return {
         id: (_b = (_a = result.cid) !== null && _a !== void 0 ? _a : result.bvid) !== null && _b !== void 0 ? _b : result.aid,
         aid: result.aid,
@@ -609,7 +617,7 @@ function formatMedia(result) {
             ? "http:".concat(result.pic)
             : result.pic,
         description: result.description,
-        tags: (_j = result.tag) === null || _j === void 0 ? void 0 : _j.split(","),
+        tags: result.tag,
         date: dayjs.unix(result.pubdate || result.created).format("YYYY-MM-DD"),
     };
 }
@@ -718,7 +726,7 @@ const searchHeadersBili = {
 };
 async function printSearchResult() {
     try {
-        const res = await getBiliUrl('天下 张杰');
+        const res = await getBiliUrl('多远都要在一起 G.E.M. 邓紫棋');
         console.log(res);
     }
     catch (error) {
