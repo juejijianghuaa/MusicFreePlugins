@@ -277,6 +277,60 @@ async function getMediaSource(musicItem, quality) {
         headers: _headers,
     };
 }
+async function GetMediaSourceByBili(bvid, aid, cid, quality) {
+    var _a;
+    if (!cid) {
+        cid = (await getCid(cid, aid)).data.cid;
+    }
+    const _params = bvid
+        ? {
+            bvid: bvid,
+        }
+        : {
+            aid: aid,
+        };
+    const res = (await axios_1.default.get("https://api.bilibili.com/x/player/playurl", {
+        headers: headers,
+        params: Object.assign(Object.assign({}, _params), { cid: cid, fnval: 16 }),
+    })).data;
+    let url;
+    if (res.data.dash) {
+        const audios = res.data.dash.audio;
+        audios.sort((a, b) => a.bandwidth - b.bandwidth);
+        switch (quality) {
+            case "low":
+                url = audios[0].baseUrl;
+                break;
+            case "standard":
+                url = audios[1].baseUrl;
+                break;
+            case "high":
+                url = audios[2].baseUrl;
+                break;
+            case "super":
+                url = audios[3].baseUrl;
+                break;
+        }
+    }
+    else {
+        url = res.data.durl[0].url;
+    }
+    const hostUrl = url.substring(url.indexOf("/") + 2);
+    const _headers = {
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36 Edg/89.0.774.63",
+        accept: "*/*",
+        host: hostUrl.substring(0, hostUrl.indexOf("/")),
+        "accept-encoding": "gzip, deflate, br",
+        connection: "keep-alive",
+        referer: "https://www.bilibili.com/video/".concat((_a = (bvid !== null && bvid !== undefined
+            ? bvid
+            : aid)) !== null && _a !== void 0 ? _a : ""),
+    };
+    return {
+        url: url,
+        headers: _headers,
+    };
+}
 async function getTopLists() {
     const precious = {
         title: "入站必刷",
@@ -451,6 +505,7 @@ module.exports = {
         }
     },
     getMediaSource,
+    GetMediaSourceByBili,
     async getAlbumInfo(albumItem) {
         var _a;
         const cidRes = await getCid(albumItem.bvid, albumItem.aid);
@@ -475,3 +530,16 @@ module.exports = {
     getTopListDetail,
     importMusicSheet,
 };
+async function printSearchResult() {
+    try {
+    }
+    catch (error) {
+        console.error('Error:', error);
+    }
+}
+printSearchResult();
+async function getBiliUrl(key) {
+    const result = await searchAlbum(key, 1);
+    const resulturl = await GetMediaSourceByBili(result.data[0].bvid, result.data[0].aid, result.data[0].cid, "standard");
+    return { resulturl };
+}

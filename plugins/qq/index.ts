@@ -1,6 +1,7 @@
 import axios from "axios";
 import CryptoJs = require("crypto-js");
-
+import he = require("he");
+import dayjs = require("dayjs");
 const pageSize = 20;
 
 function formatMusicItem(_) {
@@ -19,6 +20,7 @@ function formatMusicItem(_) {
     lrc: _.lyric || undefined,
     albumid: albumid,
     albummid: albummid,
+    payPlay: _.pay.pay_play !== undefined ? _.pay.pay_play : _.pay.payPlay,
   };
 }
 
@@ -29,8 +31,7 @@ function formatAlbumItem(_) {
     title: _.albumName || _.album_name,
     artwork:
       _.albumPic ||
-      `https://y.gtimg.cn/music/photo_new/T002R300x300M000${
-        _.albumMID || _.album_mid
+      `https://y.gtimg.cn/music/photo_new/T002R300x300M000${_.albumMID || _.album_mid
       }.jpg`,
     date: _.publicTime || _.pub_time,
     singerID: _.singerID || _.singer_id,
@@ -58,7 +59,13 @@ const searchTypeMap = {
   7: "song", // 实际上是歌词
   12: "mv",
 };
-
+const headersBili = {
+  "user-agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36 Edg/89.0.774.63",
+  accept: "*/*",
+  "accept-encoding": "gzip, deflate, br",
+  "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
+};
 const headers = {
   referer: "https://y.qq.com",
   "user-agent":
@@ -67,7 +74,8 @@ const headers = {
 };
 
 const validSongFilter = (item) => {
-  return item.pay.pay_play === 0 || item.pay.payplay === 0;
+  //return item.pay.pay_play === 0 || item.pay.payplay === 0;
+  return true;
 };
 
 async function searchBase(query, page, type) {
@@ -101,7 +109,7 @@ async function searchBase(query, page, type) {
 
 async function searchMusic(query, page) {
   const songs = await searchBase(query, page, 0);
-
+console.log(songs.data[0])
   return {
     isEnd: songs.isEnd,
     data: songs.data.filter(validSongFilter).map(formatMusicItem),
@@ -398,9 +406,8 @@ async function getArtistWorks(artistItem, page, type) {
 async function getLyric(musicItem) {
   const result = (
     await axios({
-      url: `http://c.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_new.fcg?songmid=${
-        musicItem.songmid
-      }&pcachetime=${new Date().getTime()}&g_tk=5381&loginUin=0&hostUin=0&inCharset=utf8&outCharset=utf-8&notice=0&platform=yqq&needNewCode=0`,
+      url: `http://c.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_new.fcg?songmid=${musicItem.songmid
+        }&pcachetime=${new Date().getTime()}&g_tk=5381&loginUin=0&hostUin=0&inCharset=utf8&outCharset=utf-8&notice=0&platform=yqq&needNewCode=0`,
       headers: { Referer: "https://y.qq.com", Cookie: "uin=" },
       method: "get",
       xsrfCookieName: "XSRF-TOKEN",
@@ -476,11 +483,9 @@ async function getTopLists() {
 
 async function getTopListDetail(topListItem: IMusicSheet.IMusicSheetItem) {
   const res = await axios({
-    url: `https://u.y.qq.com/cgi-bin/musicu.fcg?g_tk=5381&data=%7B%22detail%22%3A%7B%22module%22%3A%22musicToplist.ToplistInfoServer%22%2C%22method%22%3A%22GetDetail%22%2C%22param%22%3A%7B%22topId%22%3A${
-      topListItem.id
-    }%2C%22offset%22%3A0%2C%22num%22%3A100%2C%22period%22%3A%22${
-      topListItem.period ?? ""
-    }%22%7D%7D%2C%22comm%22%3A%7B%22ct%22%3A24%2C%22cv%22%3A0%7D%7D`,
+    url: `https://u.y.qq.com/cgi-bin/musicu.fcg?g_tk=5381&data=%7B%22detail%22%3A%7B%22module%22%3A%22musicToplist.ToplistInfoServer%22%2C%22method%22%3A%22GetDetail%22%2C%22param%22%3A%7B%22topId%22%3A${topListItem.id
+      }%2C%22offset%22%3A0%2C%22num%22%3A100%2C%22period%22%3A%22${topListItem.period ?? ""
+      }%22%7D%7D%2C%22comm%22%3A%7B%22ct%22%3A24%2C%22cv%22%3A0%7D%7D`,
     method: "get",
     headers: {
       Cookie: "uin=",
@@ -612,31 +617,37 @@ module.exports = {
     }
   },
   async getMediaSource(musicItem, quality: IMusic.IQualityKey) {
-    let purl = "";
-    let domain = "";
-    let type = "128";
-    if (quality === "standard") {
-      type = "320";
-    } else if (quality === "high") {
-      type = "m4a";
-    } else if (quality === "super") {
-      type = "flac";
+    let finalurl = "";
+    if (musicItem.payPlay === 1) {
+      const { resulturl } = await getBiliUrl(musicItem.title + " " + musicItem.artist);
+      finalurl = resulturl.url
+    } else{
+      let purl = "";
+      let domain = "";
+      let type = "128";
+      if (quality === "standard") {
+        type = "320";
+      } else if (quality === "high") {
+        type = "m4a";
+      } else if (quality === "super") {
+        type = "flac";
+      }
+      const result = await getSourceUrl(musicItem.songmid, type);
+      if (result.req_0 && result.req_0.data && result.req_0.data.midurlinfo) {
+        purl = result.req_0.data.midurlinfo[0].purl;
+      }
+      if (!purl) {
+        return null;
+      }
+      if (domain === "") {
+        domain =
+          result.req_0.data.sip.find((i) => !i.startsWith("http://ws")) ||
+          result.req_0.data.sip[0];
+      }
+      finalurl = `${domain}${purl}`
     }
-    const result = await getSourceUrl(musicItem.songmid, type);
-    if (result.req_0 && result.req_0.data && result.req_0.data.midurlinfo) {
-      purl = result.req_0.data.midurlinfo[0].purl;
-    }
-    if (!purl) {
-      return null;
-    }
-    if (domain === "") {
-      domain =
-        result.req_0.data.sip.find((i) => !i.startsWith("http://ws")) ||
-        result.req_0.data.sip[0];
-    }
-
     return {
-      url: `${domain}${purl}`,
+      url: finalurl,
     };
   },
   getLyric,
@@ -649,3 +660,185 @@ module.exports = {
   getRecommendSheetsByTag,
   getMusicSheetInfo,
 };
+async function getBiliUrl(key) {
+  const result = await searchAlbumBili(key, 1);
+  //const await search(key, 1, 'music');
+  const resulturl = await GetMediaSourceByBili(result.data[0].bvid, result.data[0].aid, result.data[0].cid, "high");
+  return { resulturl };
+}
+async function searchAlbumBili(keyword, page) {
+  const resultData = await searchBaseBili(keyword, page, "video");
+  const albums = resultData.result.map(formatMedia);
+  console.log(albums);
+  return {
+    isEnd: resultData.numResults <= page * pageSize,
+    data: albums,
+  };
+}
+function formatMedia(result: any) {
+  return {
+    id: result.cid ?? result.bvid ?? result.aid,
+    aid: result.aid,
+    bvid: result.bvid,
+    artist: result.author ?? result.owner?.name,
+    title: he.decode(
+      result.title?.replace(/(\<em(.*?)\>)|(\<\/em\>)/g, "") ?? ""
+    ),
+    album: result.bvid ?? result.aid,
+    artwork: result.pic?.startsWith("//")
+      ? "http:".concat(result.pic)
+      : result.pic,
+    description: result.description,
+    // duration: durationToSec(result.duration),
+    tags: result.tag?.split(","),
+    date: dayjs.unix(result.pubdate || result.created).format("YYYY-MM-DD"),
+  };
+}
+/** 获取cid */
+async function getCid(bvid, aid) {
+  const params = bvid
+    ? {
+      bvid: bvid,
+    }
+    : {
+      aid: aid,
+    };
+  const cidRes = (
+    await axios.get("https://api.bilibili.com/x/web-interface/view?%s", {
+      headers: headers,
+      params: params,
+    })
+  ).data;
+  return cidRes;
+}
+async function GetMediaSourceByBili(
+  bvid, aid, cid, quality
+) {
+  //let cid = musicItem.cid;
+
+  if (!cid) {
+    cid = (await getCid(cid, aid)).data.cid;
+  }
+
+  const _params = bvid
+    ? {
+      bvid: bvid,
+    }
+    : {
+      aid: aid,
+    };
+
+  const res = (
+    await axios.get("https://api.bilibili.com/x/player/playurl", {
+      headers: headersBili,
+      params: { ..._params, cid: cid, fnval: 16 },
+    })
+  ).data;
+  let url;
+
+  if (res.data.dash) {
+    const audios = res.data.dash.audio;
+    audios.sort((a, b) => a.bandwidth - b.bandwidth);
+    switch (quality) {
+      case "low":
+        url = audios[0].baseUrl;
+        break;
+      case "standard":
+        url = audios[1].baseUrl;
+        break;
+      case "high":
+        url = audios[2].baseUrl;
+        break;
+      case "super":
+        url = audios[3].baseUrl;
+        break;
+    }
+  } else {
+    url = res.data.durl[0].url;
+  }
+
+  const hostUrl = url.substring(url.indexOf("/") + 2);
+  const _headers = {
+    "user-agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36 Edg/89.0.774.63",
+    accept: "*/*",
+    host: hostUrl.substring(0, hostUrl.indexOf("/")),
+    "accept-encoding": "gzip, deflate, br",
+    connection: "keep-alive",
+    referer: "https://www.bilibili.com/video/".concat(
+      (bvid !== null && bvid !== undefined
+        ? bvid
+        : aid) ?? ""
+    ),
+  };
+  return {
+    url: url,
+    headers: _headers,
+  };
+}
+/** 搜索 */
+async function searchBaseBili(keyword: string, page: number, searchType) {
+  //await getCookie();
+  const params = {
+    context: "",
+    page: page,
+    order: "click",
+    page_size: pageSize,
+    keyword: keyword,
+    duration: "",
+    tids_1: "",
+    tids_2: "",
+    __refresh__: true,
+    _extra: "",
+    highlight: 1,
+    single_column: 0,
+    platform: "pc",
+    from_source: "",
+    search_type: searchType,
+    dynamic_offset: 0,
+  };
+  const res = (
+    await axios.get("https://api.bilibili.com/x/web-interface/search/type", {
+      headers: {
+        ...searchHeadersBili,
+        cookie: `buvid3=808CCB82-55C4-DFD4-15C2-23473853C38286589infoc`,
+      },
+      params: params,
+    })
+  ).data;
+  return res.data;
+}
+const searchHeadersBili = {
+  "user-agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36 Edg/89.0.774.63",
+  accept: "application/json, text/plain, */*",
+  "accept-encoding": "gzip, deflate, br",
+  origin: "https://search.bilibili.com",
+  "sec-fetch-site": "same-site",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-dest": "empty",
+  referer: "https://search.bilibili.com/",
+  "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
+};
+// Import the search function from your module
+// 使用相对路径
+//const { search } = require('./index.ts');
+// //const { getBiliUrl } = require('./index.ts');
+
+// // Define an async function to print search results
+async function printSearchResult() {
+  try {
+    // Call the imported search function
+    const res = await getBiliUrl('圣诞星 (feat. 杨瑞代) 周杰伦');
+    const data = await searchMusic('圣诞星', 1);
+//const top = await getTopLists();
+    //const result = await getMediaSource;
+    // console.log(result.data[0].aid);
+    //console.log(data);
+  } catch (error) {
+    console.error('Error:', error);
+  }
+}
+
+// Call the async function to execute the search and print the result
+printSearchResult();

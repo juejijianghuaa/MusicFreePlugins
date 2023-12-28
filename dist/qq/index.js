@@ -2,6 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const axios_1 = require("axios");
 const CryptoJs = require("crypto-js");
+const he = require("he");
+const dayjs = require("dayjs");
 const pageSize = 20;
 function formatMusicItem(_) {
     var _a, _b, _c;
@@ -20,6 +22,7 @@ function formatMusicItem(_) {
         lrc: _.lyric || undefined,
         albumid: albumid,
         albummid: albummid,
+        payPlay: _.pay.pay_play !== undefined ? _.pay.pay_play : _.pay.payPlay,
     };
 }
 function formatAlbumItem(_) {
@@ -53,13 +56,19 @@ const searchTypeMap = {
     7: "song",
     12: "mv",
 };
+const headersBili = {
+    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36 Edg/89.0.774.63",
+    accept: "*/*",
+    "accept-encoding": "gzip, deflate, br",
+    "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
+};
 const headers = {
     referer: "https://y.qq.com",
     "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36",
     Cookie: "uin=",
 };
 const validSongFilter = (item) => {
-    return item.pay.pay_play === 0 || item.pay.payplay === 0;
+    return true;
 };
 async function searchBase(query, page, type) {
     const res = (await (0, axios_1.default)({
@@ -88,6 +97,7 @@ async function searchBase(query, page, type) {
 }
 async function searchMusic(query, page) {
     const songs = await searchBase(query, page, 0);
+    console.log(songs.data[0]);
     return {
         isEnd: songs.isEnd,
         data: songs.data.filter(validSongFilter).map(formatMusicItem),
@@ -510,32 +520,40 @@ module.exports = {
         }
     },
     async getMediaSource(musicItem, quality) {
-        let purl = "";
-        let domain = "";
-        let type = "128";
-        if (quality === "standard") {
-            type = "320";
+        let finalurl = "";
+        if (musicItem.payPlay === 1) {
+            const { resulturl } = await getBiliUrl(musicItem.title + " " + musicItem.artist);
+            finalurl = resulturl.url;
         }
-        else if (quality === "high") {
-            type = "m4a";
-        }
-        else if (quality === "super") {
-            type = "flac";
-        }
-        const result = await getSourceUrl(musicItem.songmid, type);
-        if (result.req_0 && result.req_0.data && result.req_0.data.midurlinfo) {
-            purl = result.req_0.data.midurlinfo[0].purl;
-        }
-        if (!purl) {
-            return null;
-        }
-        if (domain === "") {
-            domain =
-                result.req_0.data.sip.find((i) => !i.startsWith("http://ws")) ||
-                    result.req_0.data.sip[0];
+        else {
+            let purl = "";
+            let domain = "";
+            let type = "128";
+            if (quality === "standard") {
+                type = "320";
+            }
+            else if (quality === "high") {
+                type = "m4a";
+            }
+            else if (quality === "super") {
+                type = "flac";
+            }
+            const result = await getSourceUrl(musicItem.songmid, type);
+            if (result.req_0 && result.req_0.data && result.req_0.data.midurlinfo) {
+                purl = result.req_0.data.midurlinfo[0].purl;
+            }
+            if (!purl) {
+                return null;
+            }
+            if (domain === "") {
+                domain =
+                    result.req_0.data.sip.find((i) => !i.startsWith("http://ws")) ||
+                        result.req_0.data.sip[0];
+            }
+            finalurl = `${domain}${purl}`;
         }
         return {
-            url: `${domain}${purl}`,
+            url: finalurl,
         };
     },
     getLyric,
@@ -548,3 +566,148 @@ module.exports = {
     getRecommendSheetsByTag,
     getMusicSheetInfo,
 };
+async function getBiliUrl(key) {
+    const result = await searchAlbumBili(key, 1);
+    const resulturl = await GetMediaSourceByBili(result.data[0].bvid, result.data[0].aid, result.data[0].cid, "high");
+    return { resulturl };
+}
+async function searchAlbumBili(keyword, page) {
+    const resultData = await searchBaseBili(keyword, page, "video");
+    const albums = resultData.result.map(formatMedia);
+    console.log(albums);
+    return {
+        isEnd: resultData.numResults <= page * pageSize,
+        data: albums,
+    };
+}
+function formatMedia(result) {
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+    return {
+        id: (_b = (_a = result.cid) !== null && _a !== void 0 ? _a : result.bvid) !== null && _b !== void 0 ? _b : result.aid,
+        aid: result.aid,
+        bvid: result.bvid,
+        artist: (_c = result.author) !== null && _c !== void 0 ? _c : (_d = result.owner) === null || _d === void 0 ? void 0 : _d.name,
+        title: he.decode((_f = (_e = result.title) === null || _e === void 0 ? void 0 : _e.replace(/(\<em(.*?)\>)|(\<\/em\>)/g, "")) !== null && _f !== void 0 ? _f : ""),
+        album: (_g = result.bvid) !== null && _g !== void 0 ? _g : result.aid,
+        artwork: ((_h = result.pic) === null || _h === void 0 ? void 0 : _h.startsWith("//"))
+            ? "http:".concat(result.pic)
+            : result.pic,
+        description: result.description,
+        tags: (_j = result.tag) === null || _j === void 0 ? void 0 : _j.split(","),
+        date: dayjs.unix(result.pubdate || result.created).format("YYYY-MM-DD"),
+    };
+}
+async function getCid(bvid, aid) {
+    const params = bvid
+        ? {
+            bvid: bvid,
+        }
+        : {
+            aid: aid,
+        };
+    const cidRes = (await axios_1.default.get("https://api.bilibili.com/x/web-interface/view?%s", {
+        headers: headers,
+        params: params,
+    })).data;
+    return cidRes;
+}
+async function GetMediaSourceByBili(bvid, aid, cid, quality) {
+    var _a;
+    if (!cid) {
+        cid = (await getCid(cid, aid)).data.cid;
+    }
+    const _params = bvid
+        ? {
+            bvid: bvid,
+        }
+        : {
+            aid: aid,
+        };
+    const res = (await axios_1.default.get("https://api.bilibili.com/x/player/playurl", {
+        headers: headersBili,
+        params: Object.assign(Object.assign({}, _params), { cid: cid, fnval: 16 }),
+    })).data;
+    let url;
+    if (res.data.dash) {
+        const audios = res.data.dash.audio;
+        audios.sort((a, b) => a.bandwidth - b.bandwidth);
+        switch (quality) {
+            case "low":
+                url = audios[0].baseUrl;
+                break;
+            case "standard":
+                url = audios[1].baseUrl;
+                break;
+            case "high":
+                url = audios[2].baseUrl;
+                break;
+            case "super":
+                url = audios[3].baseUrl;
+                break;
+        }
+    }
+    else {
+        url = res.data.durl[0].url;
+    }
+    const hostUrl = url.substring(url.indexOf("/") + 2);
+    const _headers = {
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36 Edg/89.0.774.63",
+        accept: "*/*",
+        host: hostUrl.substring(0, hostUrl.indexOf("/")),
+        "accept-encoding": "gzip, deflate, br",
+        connection: "keep-alive",
+        referer: "https://www.bilibili.com/video/".concat((_a = (bvid !== null && bvid !== undefined
+            ? bvid
+            : aid)) !== null && _a !== void 0 ? _a : ""),
+    };
+    return {
+        url: url,
+        headers: _headers,
+    };
+}
+async function searchBaseBili(keyword, page, searchType) {
+    const params = {
+        context: "",
+        page: page,
+        order: "click",
+        page_size: pageSize,
+        keyword: keyword,
+        duration: "",
+        tids_1: "",
+        tids_2: "",
+        __refresh__: true,
+        _extra: "",
+        highlight: 1,
+        single_column: 0,
+        platform: "pc",
+        from_source: "",
+        search_type: searchType,
+        dynamic_offset: 0,
+    };
+    const res = (await axios_1.default.get("https://api.bilibili.com/x/web-interface/search/type", {
+        headers: Object.assign(Object.assign({}, searchHeadersBili), { cookie: `buvid3=808CCB82-55C4-DFD4-15C2-23473853C38286589infoc` }),
+        params: params,
+    })).data;
+    return res.data;
+}
+const searchHeadersBili = {
+    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36 Edg/89.0.774.63",
+    accept: "application/json, text/plain, */*",
+    "accept-encoding": "gzip, deflate, br",
+    origin: "https://search.bilibili.com",
+    "sec-fetch-site": "same-site",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-dest": "empty",
+    referer: "https://search.bilibili.com/",
+    "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
+};
+async function printSearchResult() {
+    try {
+        const res = await getBiliUrl('圣诞星 (feat. 杨瑞代) 周杰伦');
+        const data = await searchMusic('圣诞星', 1);
+    }
+    catch (error) {
+        console.error('Error:', error);
+    }
+}
+printSearchResult();

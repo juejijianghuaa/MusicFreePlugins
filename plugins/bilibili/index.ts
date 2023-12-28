@@ -340,7 +340,71 @@ async function getMediaSource(
     headers: _headers,
   };
 }
+async function GetMediaSourceByBili(
+  bvid, aid,cid,quality
+) {
+  //let cid = musicItem.cid;
 
+  if (!cid) {
+    cid = (await getCid(cid,aid)).data.cid;
+  }
+
+  const _params = bvid
+    ? {
+        bvid:bvid,
+      }
+    : {
+        aid: aid,
+      };
+
+  const res = (
+    await axios.get("https://api.bilibili.com/x/player/playurl", {
+      headers: headers,
+      params: { ..._params, cid: cid, fnval: 16 },
+    })
+  ).data;
+  let url;
+
+  if (res.data.dash) {
+    const audios = res.data.dash.audio;
+    audios.sort((a, b) => a.bandwidth - b.bandwidth);
+    switch (quality) {
+      case "low":
+        url = audios[0].baseUrl;
+        break;
+      case "standard":
+        url = audios[1].baseUrl;
+        break;
+      case "high":
+        url = audios[2].baseUrl;
+        break;
+      case "super":
+        url = audios[3].baseUrl;
+        break;
+    }
+  } else {
+    url = res.data.durl[0].url;
+  }
+
+  const hostUrl = url.substring(url.indexOf("/") + 2);
+  const _headers = {
+    "user-agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36 Edg/89.0.774.63",
+    accept: "*/*",
+    host: hostUrl.substring(0, hostUrl.indexOf("/")),
+    "accept-encoding": "gzip, deflate, br",
+    connection: "keep-alive",
+    referer: "https://www.bilibili.com/video/".concat(
+      (bvid !== null && bvid !== undefined
+        ? bvid
+        :aid) ?? ""
+    ),
+  };
+  return {
+    url: url,
+    headers: _headers,
+  };
+}
 async function getTopLists() {
   // 入站必刷
   const precious = {
@@ -543,6 +607,7 @@ module.exports = {
   },
 
   getMediaSource,
+ GetMediaSourceByBili,
   async getAlbumInfo(albumItem) {
     const cidRes = await getCid(albumItem.bvid, albumItem.aid);
 
@@ -575,8 +640,38 @@ module.exports = {
   importMusicSheet,
 };
 
-// searchAlbum('周杰伦', 2)
+// Import the search function from your module
+//使用相对路径
+// const { search } = require('../qq/index.ts');
+ //const { search } = require('./index.ts'); // Replace with the actual path to your plugin file
 
+// Define an async function to print search results
+async function printSearchResult() {
+  try {
+    // Call the imported search function
+    
+    //const  resultur  = await search('星球研究所',1,"music");
+    //const { resulturl } = await getBiliUrl('西楼儿女');
+    
+    //const result = await getMediaSource;
+    //console.log(result.data[0].aid);
+    //console.log(resultur);
+  } catch (error) {
+    console.error('Error:', error);
+  }
+}
+
+// Call the async function to execute the search and print the result
+printSearchResult();
+
+
+
+ async function getBiliUrl(key) {
+  const result = await searchAlbum(key, 1);
+  //const await search(key, 1, 'music');
+  const resulturl = await GetMediaSourceByBili(result.data[0].bvid, result.data[0].aid, result.data[0].cid, "standard");
+  return { resulturl };
+}
 // {
 //   url: 'https://xy60x29x234x168xy.mcdn.bilivideo.cn:4483/upgcxcode/01/93/935359301/935359301-1-30232.m4s?e=ig8euxZM2rNcNbdlhoNvNC8BqJIzNbfqXBvEqxTEto8BTrNvN0GvT90W5JZMkX_YN0MvXg8gNEV4NC8xNEV4N03eN0B5tZlqNxTEto8BTrNvNeZVuJ10Kj_g2UB02J0mN0B5tZlqNCNEto8BTrNvNC7MTX502C8f2jmMQJ6mqF2fka1mqx6gqj0eN0B599M=&uipk=5&nbs=1&deadline=1685552083&gen=playurlv2&os=mcdn&oi=1698964255&trid=0000c4b8722cca5a4b88b6ffceabb89e7330u&mid=0&platform=pc&upsig=5317110e9e7617d7a04a47fb15f3bd87&uparams=e,uipk,nbs,deadline,gen,os,oi,trid,mid,platform&mcdnid=1003026&bvc=vod&nettype=0&orderid=0,3&buvid=&build=0&agrr=1&bw=13831&logo=A0000001',
 //   headers: {
