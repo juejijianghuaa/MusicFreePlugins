@@ -670,7 +670,7 @@ printSearchResult();
   const result = await searchAlbum(key, 1);
   //const await search(key, 1, 'music');
   const resulturl = await GetMediaSourceByBili(result.data[0].bvid, result.data[0].aid, result.data[0].cid, "standard");
-  return { resulturl };
+  return { resultUrl: resulturl };
 }
 // {
 //   url: 'https://xy60x29x234x168xy.mcdn.bilivideo.cn:4483/upgcxcode/01/93/935359301/935359301-1-30232.m4s?e=ig8euxZM2rNcNbdlhoNvNC8BqJIzNbfqXBvEqxTEto8BTrNvN0GvT90W5JZMkX_YN0MvXg8gNEV4NC8xNEV4N03eN0B5tZlqNxTEto8BTrNvNeZVuJ10Kj_g2UB02J0mN0B5tZlqNCNEto8BTrNvNC7MTX502C8f2jmMQJ6mqF2fka1mqx6gqj0eN0B599M=&uipk=5&nbs=1&deadline=1685552083&gen=playurlv2&os=mcdn&oi=1698964255&trid=0000c4b8722cca5a4b88b6ffceabb89e7330u&mid=0&platform=pc&upsig=5317110e9e7617d7a04a47fb15f3bd87&uparams=e,uipk,nbs,deadline,gen,os,oi,trid,mid,platform&mcdnid=1003026&bvc=vod&nettype=0&orderid=0,3&buvid=&build=0&agrr=1&bw=13831&logo=A0000001',

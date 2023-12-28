@@ -541,5 +541,5 @@ printSearchResult();
 async function getBiliUrl(key) {
     const result = await searchAlbum(key, 1);
     const resulturl = await GetMediaSourceByBili(result.data[0].bvid, result.data[0].aid, result.data[0].cid, "standard");
-    return { resulturl };
+    return { resultUrl: resulturl };
 }

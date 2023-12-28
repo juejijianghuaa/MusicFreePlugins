@@ -70,6 +70,9 @@ const headers = {
 const validSongFilter = (item) => {
     return true;
 };
+const validSongUrlFilter = (item) => {
+    return !item.title.includes("伴奏");
+};
 async function searchBase(query, page, type) {
     const res = (await (0, axios_1.default)({
         url: "https://u.y.qq.com/cgi-bin/musicu.fcg",
@@ -520,10 +523,10 @@ module.exports = {
         }
     },
     async getMediaSource(musicItem, quality) {
-        let finalurl = "";
+        let finalUrl = "";
         if (musicItem.payPlay === 1) {
-            const { resulturl } = await getBiliUrl(musicItem.title + " " + musicItem.artist);
-            finalurl = resulturl.url;
+            const { resultUrl } = await getBiliUrl(musicItem.title + " " + musicItem.artist);
+            finalUrl = resultUrl.url;
         }
         else {
             let purl = "";
@@ -550,10 +553,10 @@ module.exports = {
                     result.req_0.data.sip.find((i) => !i.startsWith("http://ws")) ||
                         result.req_0.data.sip[0];
             }
-            finalurl = `${domain}${purl}`;
+            finalUrl = `${domain}${purl}`;
         }
         return {
-            url: finalurl,
+            url: finalUrl,
         };
     },
     getLyric,
@@ -569,11 +572,11 @@ module.exports = {
 async function getBiliUrl(key) {
     const result = await searchAlbumBili(key, 1);
     const resulturl = await GetMediaSourceByBili(result.data[0].bvid, result.data[0].aid, result.data[0].cid, "high");
-    return { resulturl };
+    return { resultUrl: resulturl };
 }
 async function searchAlbumBili(keyword, page) {
     const resultData = await searchBaseBili(keyword, page, "video");
-    const albums = resultData.result.map(formatMedia);
+    const albums = resultData.result.filter(validSongUrlFilter).map(formatMedia);
     console.log(albums);
     return {
         isEnd: resultData.numResults <= page * pageSize,
@@ -703,6 +706,7 @@ const searchHeadersBili = {
 async function printSearchResult() {
     try {
         const res = await getBiliUrl('圣诞星 (feat. 杨瑞代) 周杰伦');
+        const data = await searchMusic('就让这大雨全部落下', 1);
         console.log(res);
     }
     catch (error) {
