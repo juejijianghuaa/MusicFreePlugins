@@ -782,7 +782,6 @@ async function searchBaseBili(keyword: string, page: number, searchType) {
   const params = {
     context: "",
     page: page,
-    order: "click",
     page_size: pageSize,
     keyword: keyword,
     duration: "",
@@ -830,11 +829,11 @@ async function printSearchResult() {
   try {
     // Call the imported search function
     const res = await getBiliUrl('圣诞星 (feat. 杨瑞代) 周杰伦');
-    const data = await searchMusic('圣诞星', 1);
+    //const data = await searchMusic('天下', 1);
 //const top = await getTopLists();
     //const result = await getMediaSource;
     // console.log(result.data[0].aid);
-    //console.log(data);
+    console.log(res);
   } catch (error) {
     console.error('Error:', error);
   }
