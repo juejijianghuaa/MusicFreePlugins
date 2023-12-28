@@ -71,7 +71,7 @@ const validSongFilter = (item) => {
     return true;
 };
 const validSongUrlFilter = (item) => {
-    return !item.title.includes("伴奏");
+    return !item.title.includes("伴奏") && !item.title.includes("现场") && !item.title.includes("live") && !item.title.includes("Live");
 };
 async function searchBase(query, page, type) {
     const res = (await (0, axios_1.default)({
@@ -527,6 +527,19 @@ module.exports = {
         if (musicItem.payPlay === 1) {
             const { resultUrl } = await getBiliUrl(musicItem.title + " " + musicItem.artist);
             finalUrl = resultUrl.url;
+            const hostUrl = finalUrl.substring(finalUrl.indexOf("/") + 2);
+            const _headers = {
+                "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36 Edg/89.0.774.63",
+                accept: "*/*",
+                host: hostUrl.substring(0, hostUrl.indexOf("/")),
+                "accept-encoding": "gzip, deflate, br",
+                connection: "keep-alive",
+                referer: "https://www.bilibili.com/video/",
+            };
+            return {
+                url: finalUrl,
+                headers: _headers,
+            };
         }
         else {
             let purl = "";
@@ -554,10 +567,10 @@ module.exports = {
                         result.req_0.data.sip[0];
             }
             finalUrl = `${domain}${purl}`;
+            return {
+                url: finalUrl,
+            };
         }
-        return {
-            url: finalUrl,
-        };
     },
     getLyric,
     getAlbumInfo,
@@ -571,8 +584,8 @@ module.exports = {
 };
 async function getBiliUrl(key) {
     const result = await searchAlbumBili(key, 1);
-    const resulturl = await GetMediaSourceByBili(result.data[0].bvid, result.data[0].aid, result.data[0].cid, "high");
-    return { resultUrl: resulturl };
+    const resultUrl = await GetMediaSourceByBili(result.data[0].bvid, result.data[0].aid, result.data[0].cid, "high");
+    return { resultUrl: resultUrl };
 }
 async function searchAlbumBili(keyword, page) {
     const resultData = await searchBaseBili(keyword, page, "video");
@@ -705,8 +718,7 @@ const searchHeadersBili = {
 };
 async function printSearchResult() {
     try {
-        const res = await getBiliUrl('圣诞星 (feat. 杨瑞代) 周杰伦');
-        const data = await searchMusic('就让这大雨全部落下', 1);
+        const res = await getBiliUrl('西楼儿女');
         console.log(res);
     }
     catch (error) {
