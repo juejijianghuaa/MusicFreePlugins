@@ -500,7 +500,7 @@ function getBiliArtist(musicItem) {
 }
 module.exports = {
     platform: "QQ音乐",
-    author: '猫头猫',
+    author: '猫头猫-dk修改',
     version: "0.2.2",
     srcUrl: "https://mirror.ghproxy.com/https://raw.githubusercontent.com/dukunjueji/MusicFreePlugins/master/dist/qq/index.js",
     cacheControl: "no-cache",
