@@ -510,7 +510,7 @@ async function getMusicSheetInfo(sheet, page) {
 module.exports = {
     platform: "网易云",
     author: '猫头猫',
-    version: "0.2.2",
+    version: "0.2.3",
     appVersion: ">0.1.0-alpha.0",
     srcUrl: "https://mirror.ghproxy.com/https://raw.githubusercontent.com/dukunjueji/MusicFreePlugins/master/dist/netease/index.js",
     cacheControl: "no-store",
