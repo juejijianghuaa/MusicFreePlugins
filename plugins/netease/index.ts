@@ -374,7 +374,7 @@ async function getValidMusicItems(trackIds) {
       )
     ).data;
     const validMusicItems = songDetails.songs
-      .filter((_) => _.fee === 0 || _.fee === 8)
+      //.filter((_) => _.fee === 0 || _.fee === 8)
       .map(formatMusicItem);
     return validMusicItems;
   } catch (e) {
@@ -622,7 +622,7 @@ async function getMusicSheetInfo(sheet: IMusicSheet.IMusicSheetItem, page) {
 module.exports = {
   platform: "网易云",
   author: '猫头猫',
-  version: "0.2.3",
+  version: "0.2.4",
   appVersion: ">0.1.0-alpha.0",
   srcUrl:
     "https://mirror.ghproxy.com/https://raw.githubusercontent.com/dukunjueji/MusicFreePlugins/master/dist/netease/index.js",
