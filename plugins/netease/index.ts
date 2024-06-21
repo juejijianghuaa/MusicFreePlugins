@@ -98,7 +98,8 @@ function formatAlbumItem(_) {
 }
 
 function musicCanPlayFilter(_) {
-  return (_.fee === 0 || _.fee === 8) && (!_.privilege || _.privilege?.st >= 0);
+  //return (_.fee === 0 || _.fee === 8) && (!_.privilege || _.privilege?.st >= 0);
+  return true
 }
 
 const pageSize = 30;
@@ -689,3 +690,19 @@ module.exports = {
 // }
 
 // g();
+async function printSearchResult() {
+  try {
+      // Call the imported search function
+      //const res = await getBiliUrl('多远都要在一起 G.E.M. 邓紫棋');
+      const data = await searchMusic('多远都要在一起', 1);
+//const top = await getTopLists();
+      //const result = await getMediaSource;
+      // console.log(result.data[0].aid);
+      console.log(data);
+  } catch (error) {
+      console.error('Error:', error);
+  }
+}
+
+// Call the async function to execute the search and print the result
+printSearchResult();
